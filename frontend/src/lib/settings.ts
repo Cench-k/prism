@@ -56,32 +56,38 @@ export const PROVIDER_META: Record<AiProvider, ProviderMeta> = {
   },
   gemini: {
     label: "Google Gemini",
-    defaultModel: "gemini-2.0-flash",
+    defaultModel: "gemini-2.5-flash",
     models: [
       {
-        id: "gemini-2.0-flash",
-        label: "Gemini 2.0 Flash — 최신 빠른 모델",
+        id: "gemini-2.5-flash",
+        label: "Gemini 2.5 Flash — 추천",
         tag: "무료 한도",
       },
       {
-        id: "gemini-2.0-flash-lite",
-        label: "Gemini 2.0 Flash Lite — 더 저렴",
+        id: "gemini-2.5-flash-lite",
+        label: "Gemini 2.5 Flash Lite — 가장 빠르고 저렴",
         tag: "무료 한도",
       },
       {
-        id: "gemini-1.5-flash",
-        label: "Gemini 1.5 Flash — 이전 세대 안정",
+        id: "gemini-2.5-pro",
+        label: "Gemini 2.5 Pro — 고품질",
         tag: "무료 한도",
       },
       {
-        id: "gemini-1.5-pro",
-        label: "Gemini 1.5 Pro — 고품질",
+        id: "gemini-3-flash-preview",
+        label: "Gemini 3 Flash (Preview) — 최신 미리보기",
+        tag: "무료 한도",
+      },
+      {
+        id: "gemini-3.1-pro-preview",
+        label: "Gemini 3.1 Pro (Preview) — 최고 성능",
         tag: "고품질",
       },
     ],
     keyHint: "AIza...",
     consoleUrl: "https://aistudio.google.com/apikey",
-    pricingNote: "Gemini Flash 시리즈는 일정 RPM/일 한도 내 무료로 사용 가능합니다.",
+    pricingNote:
+      "AI Studio 무료 티어에서 2.5 시리즈 전부 + 3.x preview를 무료로 사용 가능합니다 (분당 호출 한도 적용).",
   },
 };
 
