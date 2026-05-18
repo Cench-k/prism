@@ -13,9 +13,21 @@ import {
   clearApiKey,
   getModel,
   setModel as saveModel,
+  getCachedLiveModels,
+  setCachedLiveModels,
+  clearCachedLiveModels,
 } from "@/lib/settings";
+import { fetchLiveModels, type LiveModel } from "@/lib/api";
 
 const CUSTOM_OPTION = "__custom__";
+
+function formatAgo(ts: number): string {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return "방금";
+  if (sec < 3600) return `${Math.floor(sec / 60)}분 전`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`;
+  return `${Math.floor(sec / 86400)}일 전`;
+}
 
 export default function SettingsPage() {
   const [provider, setProviderState] = useState<AiProvider>("anthropic");
@@ -25,18 +37,32 @@ export default function SettingsPage() {
   const [show, setShow] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const [liveModels, setLiveModels] = useState<LiveModel[]>([]);
+  const [liveFetchedAt, setLiveFetchedAt] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+
   const meta = PROVIDER_META[provider];
 
+  // 초기 로드
   useEffect(() => {
     const p = getProvider();
     setProviderState(p);
     setKey(getApiKey());
 
+    const cached = getCachedLiveModels(p);
+    if (cached) {
+      setLiveModels(cached.models);
+      setLiveFetchedAt(cached.fetchedAt);
+    }
+
     const storedModel = getModel();
     if (!storedModel) {
       setModelSelect("");
     } else {
-      const inCatalog = PROVIDER_META[p].models.some((m) => m.id === storedModel);
+      const inCatalog =
+        PROVIDER_META[p].models.some((m) => m.id === storedModel) ||
+        (cached?.models ?? []).some((m) => m.id === storedModel);
       if (inCatalog) {
         setModelSelect(storedModel);
         setCustomModel("");
@@ -47,15 +73,75 @@ export default function SettingsPage() {
     }
   }, []);
 
+  // provider 전환 시 캐시 다시 로드
+  useEffect(() => {
+    const cached = getCachedLiveModels(provider);
+    if (cached) {
+      setLiveModels(cached.models);
+      setLiveFetchedAt(cached.fetchedAt);
+    } else {
+      setLiveModels([]);
+      setLiveFetchedAt(null);
+    }
+    setRefreshError(null);
+  }, [provider]);
+
+  // 카탈로그 + 라이브 모델 병합 (중복 제거, 라이브 우선)
+  const mergedModels = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { id: string; label: string; isLive: boolean }[] = [];
+    for (const m of liveModels) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      result.push({ id: m.id, label: m.label, isLive: true });
+    }
+    for (const m of meta.models) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      result.push({
+        id: m.id,
+        label: m.label + (m.tag ? ` · ${m.tag}` : ""),
+        isLive: false,
+      });
+    }
+    return result;
+  }, [liveModels, meta]);
+
   const effectiveModel = useMemo(() => {
     if (modelSelect === CUSTOM_OPTION) return customModel.trim();
-    return modelSelect; // "" 이면 기본값 사용
+    return modelSelect;
   }, [modelSelect, customModel]);
 
   const onProviderChange = (p: AiProvider) => {
     setProviderState(p);
     setModelSelect("");
     setCustomModel("");
+  };
+
+  const onRefreshModels = async () => {
+    if (!key.trim()) {
+      setRefreshError("먼저 API 키를 입력하고 저장해주세요.");
+      return;
+    }
+    setRefreshing(true);
+    setRefreshError(null);
+    try {
+      const models = await fetchLiveModels(provider, key.trim());
+      setLiveModels(models);
+      const now = Date.now();
+      setLiveFetchedAt(now);
+      setCachedLiveModels(provider, models);
+    } catch (e) {
+      setRefreshError(e instanceof Error ? e.message : "모델 목록을 가져오지 못했습니다.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const onClearCache = () => {
+    clearCachedLiveModels(provider);
+    setLiveModels([]);
+    setLiveFetchedAt(null);
   };
 
   const onSave = () => {
@@ -66,7 +152,7 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 1500);
   };
 
-  const onClear = () => {
+  const onClearKey = () => {
     clearApiKey();
     setKey("");
     setSaved(true);
@@ -140,9 +226,19 @@ export default function SettingsPage() {
 
           {/* Model */}
           <div>
-            <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-white/50">
-              모델
-            </label>
+            <div className="mb-2 flex items-end justify-between">
+              <label className="block text-xs uppercase tracking-[0.2em] text-white/50">
+                모델
+              </label>
+              <button
+                onClick={onRefreshModels}
+                disabled={refreshing || !key.trim()}
+                className="text-[11px] text-sky-400 hover:text-sky-300 disabled:opacity-40"
+              >
+                {refreshing ? "불러오는 중…" : "🔄 최신 목록 새로고침"}
+              </button>
+            </div>
+
             <select
               value={modelSelect}
               onChange={(e) => setModelSelect(e.target.value)}
@@ -151,12 +247,31 @@ export default function SettingsPage() {
               <option value="" className="bg-black">
                 기본값 ({meta.defaultModel})
               </option>
-              {meta.models.map((m) => (
-                <option key={m.id} value={m.id} className="bg-black">
-                  {m.label}
-                  {m.tag ? ` · ${m.tag}` : ""}
-                </option>
-              ))}
+
+              {liveModels.length > 0 && (
+                <optgroup label="실시간 (provider에서 가져옴)">
+                  {liveModels.map((m) => (
+                    <option key={`live-${m.id}`} value={m.id} className="bg-black">
+                      {m.label}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+
+              <optgroup label="기본 카탈로그">
+                {meta.models.map((m) => (
+                  <option
+                    key={`cat-${m.id}`}
+                    value={m.id}
+                    className="bg-black"
+                    disabled={liveModels.some((lm) => lm.id === m.id)}
+                  >
+                    {m.label}
+                    {m.tag ? ` · ${m.tag}` : ""}
+                  </option>
+                ))}
+              </optgroup>
+
               <option value={CUSTOM_OPTION} className="bg-black">
                 직접 입력…
               </option>
@@ -174,12 +289,25 @@ export default function SettingsPage() {
               />
             )}
 
-            {modelSelect && modelSelect !== CUSTOM_OPTION && (
-              <p className="mt-2 text-[11px] text-white/40">
-                {meta.models.find((m) => m.id === modelSelect)?.tag === "무료 한도" &&
-                  "✅ 이 모델은 무료 한도 내에서 사용 가능합니다 (provider 정책 적용)."}
-                {meta.models.find((m) => m.id === modelSelect)?.tag === "고품질" &&
-                  "⚠️ 고품질 모델은 호출 비용이 상대적으로 높습니다."}
+            <div className="mt-2 flex items-center justify-between text-[11px]">
+              <span className="text-white/40">
+                {liveFetchedAt
+                  ? `최신 목록 ${formatAgo(liveFetchedAt)} 갱신 (${liveModels.length}개)`
+                  : "최신 목록 미수신 — 기본 카탈로그 사용 중"}
+              </span>
+              {liveFetchedAt && (
+                <button
+                  onClick={onClearCache}
+                  className="text-white/40 hover:text-white/70"
+                >
+                  초기화
+                </button>
+              )}
+            </div>
+
+            {refreshError && (
+              <p className="mt-2 rounded-xl border border-rose-400/30 bg-rose-400/5 px-3 py-2 text-[11px] text-rose-300">
+                ⚠️ {refreshError}
               </p>
             )}
           </div>
@@ -194,7 +322,7 @@ export default function SettingsPage() {
             </button>
             {getApiKey() && (
               <button
-                onClick={onClear}
+                onClick={onClearKey}
                 className="text-sm text-white/60 hover:text-rose-400"
               >
                 키 삭제
@@ -219,13 +347,13 @@ export default function SettingsPage() {
               에서 로그인 후 새 키 생성
             </li>
             <li>키를 복사해 위에 붙여넣고 저장</li>
+            <li>
+              <strong className="text-white">🔄 최신 목록 새로고침</strong> 클릭하면
+              현재 사용 가능한 모델을 실시간으로 가져옵니다
+            </li>
           </ol>
           <p className="text-xs text-white/40">{meta.pricingNote}</p>
         </section>
-
-        <p className="mt-6 text-[11px] leading-relaxed text-white/40">
-          💡 모델 ID가 정확하지 않으면 요약 생성 시 오류 메시지가 표시됩니다. 그럴 땐 위 드롭다운에서 다른 모델을 고르거나 “기본값”을 선택하세요.
-        </p>
       </div>
     </main>
   );

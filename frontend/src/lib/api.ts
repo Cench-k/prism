@@ -22,6 +22,27 @@ export async function fetchCryptoWidget(): Promise<{ tickers: CryptoTicker[] }> 
   return res.json();
 }
 
+export type LiveModel = { id: string; label: string };
+
+export async function fetchLiveModels(
+  provider: string,
+  apiKey: string
+): Promise<LiveModel[]> {
+  const res = await fetch(`${BASE}/api/llm/models`, {
+    method: "GET",
+    headers: {
+      "X-AI-Provider": provider,
+      "X-AI-Key": apiKey,
+    },
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `models fetch failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return (data.models ?? []) as LiveModel[];
+}
+
 export async function summarizeArticle(
   articleId: string,
   cfg: { provider: string; apiKey: string; model?: string }

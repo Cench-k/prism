@@ -6,6 +6,7 @@ from app.config import settings
 from app.db.mongo import ensure_indexes
 from app.api.articles import router as articles_router
 from app.api.admin import router as admin_router
+from app.api.llm import router as llm_router
 
 
 @asynccontextmanager
@@ -25,6 +26,7 @@ app.add_middleware(
 
 app.include_router(articles_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(llm_router, prefix="/api")
 
 
 @app.get("/health")

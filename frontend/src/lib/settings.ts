@@ -147,3 +147,42 @@ export function setModel(value: string): void {
 export function hasUsableConfig(): boolean {
   return !!getApiKey().trim();
 }
+
+// --- 라이브 모델 캐시 (provider별) -----------------------------------
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type LiveModelCache = {
+  fetchedAt: number;
+  models: { id: string; label: string }[];
+};
+
+function _cacheKey(provider: AiProvider) {
+  return `prism.liveModels.${provider}`;
+}
+
+export function getCachedLiveModels(
+  provider: AiProvider
+): LiveModelCache | null {
+  const raw = _read(_cacheKey(provider));
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as LiveModelCache;
+    if (Date.now() - parsed.fetchedAt > CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedLiveModels(
+  provider: AiProvider,
+  models: { id: string; label: string }[]
+): void {
+  const payload: LiveModelCache = { fetchedAt: Date.now(), models };
+  _write(_cacheKey(provider), JSON.stringify(payload));
+}
+
+export function clearCachedLiveModels(provider: AiProvider): void {
+  _write(_cacheKey(provider), "");
+}
