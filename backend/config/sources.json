@@ -1,0 +1,28 @@
+{
+  "sources": [
+    {
+      "id": "coindesk",
+      "type": "rss",
+      "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+      "category": "crypto",
+      "subcategory": "market",
+      "lang": "en"
+    },
+    {
+      "id": "cointelegraph",
+      "type": "rss",
+      "url": "https://cointelegraph.com/rss",
+      "category": "crypto",
+      "subcategory": "market",
+      "lang": "en"
+    },
+    {
+      "id": "decrypt",
+      "type": "rss",
+      "url": "https://decrypt.co/feed",
+      "category": "crypto",
+      "subcategory": "market",
+      "lang": "en"
+    }
+  ]
+}

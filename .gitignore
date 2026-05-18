@@ -1,0 +1,14 @@
+# 모노레포 루트 .gitignore (각 서브 디렉토리 .gitignore도 함께 동작)
+.DS_Store
+Thumbs.db
+*.log
+
+# 환경변수 (배포 시크릿)
+.env
+.env.local
+.env.*.local
+
+# 에디터/IDE
+.vscode/
+.idea/
+*.swp

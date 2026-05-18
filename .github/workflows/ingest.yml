@@ -1,0 +1,38 @@
+name: Prism ingest
+
+on:
+  schedule:
+    # 매시간 정각 (UTC) — 한국시간 기준으로는 매시간
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Filter by category (optional)"
+        required: false
+        default: ""
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Trigger ingest endpoint
+        env:
+          API_BASE: ${{ secrets.PRISM_API_BASE }}
+          INGEST_TOKEN: ${{ secrets.PRISM_INGEST_TOKEN }}
+          CATEGORY: ${{ github.event.inputs.category }}
+        run: |
+          if [ -z "$API_BASE" ] || [ -z "$INGEST_TOKEN" ]; then
+            echo "Missing PRISM_API_BASE or PRISM_INGEST_TOKEN secret"
+            exit 1
+          fi
+          url="$API_BASE/api/admin/ingest/sync"
+          if [ -n "$CATEGORY" ]; then
+            url="$url?category=$CATEGORY"
+          fi
+          echo "POST $url"
+          curl -fsS -X POST "$url" \
+            -H "X-Ingest-Token: $INGEST_TOKEN" \
+            -H "Content-Type: application/json" \
+            --max-time 600 \
+            --retry 2 --retry-delay 10

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  overscroll-behavior: none;
+}
+
+.snap-y-pages {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-page {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.glass {
+  background: rgba(20, 20, 22, 0.55);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
