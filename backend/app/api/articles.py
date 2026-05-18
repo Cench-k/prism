@@ -57,6 +57,23 @@ async def get_article(article_id: str):
     return _serialize(doc)
 
 
+@router.get("/categories")
+async def list_categories():
+    """현재 DB에 기사가 있는 카테고리 목록 + 카운트."""
+    db = get_db()
+    pipeline = [
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+    ]
+    items: list[dict] = []
+    async for doc in db.articles.aggregate(pipeline):
+        cat = doc.get("_id")
+        if not cat:
+            continue
+        items.append({"id": cat, "count": doc["count"]})
+    return {"items": items}
+
+
 @router.get("/widgets/crypto")
 async def crypto_widget():
     try:

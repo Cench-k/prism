@@ -16,6 +16,15 @@ export async function fetchArticles(params: {
   return res.json();
 }
 
+export type CategoryItem = { id: string; count: number };
+
+export async function fetchCategories(): Promise<CategoryItem[]> {
+  const res = await fetch(`${BASE}/api/categories`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`categories fetch failed: ${res.status}`);
+  const data = await res.json();
+  return (data.items ?? []) as CategoryItem[];
+}
+
 export async function fetchCryptoWidget(): Promise<{ tickers: CryptoTicker[] }> {
   const res = await fetch(`${BASE}/api/widgets/crypto`, { cache: "no-store" });
   if (!res.ok) throw new Error(`crypto widget fetch failed: ${res.status}`);

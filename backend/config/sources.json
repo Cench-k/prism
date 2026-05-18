@@ -5,7 +5,6 @@
       "type": "rss",
       "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
       "category": "crypto",
-      "subcategory": "market",
       "lang": "en"
     },
     {
@@ -13,7 +12,6 @@
       "type": "rss",
       "url": "https://cointelegraph.com/rss",
       "category": "crypto",
-      "subcategory": "market",
       "lang": "en"
     },
     {
@@ -21,7 +19,55 @@
       "type": "rss",
       "url": "https://decrypt.co/feed",
       "category": "crypto",
-      "subcategory": "market",
+      "lang": "en"
+    },
+    {
+      "id": "techcrunch",
+      "type": "rss",
+      "url": "https://techcrunch.com/feed/",
+      "category": "tech",
+      "lang": "en"
+    },
+    {
+      "id": "theverge",
+      "type": "rss",
+      "url": "https://www.theverge.com/rss/index.xml",
+      "category": "tech",
+      "lang": "en"
+    },
+    {
+      "id": "hackernews",
+      "type": "rss",
+      "url": "https://news.ycombinator.com/rss",
+      "category": "tech",
+      "lang": "en"
+    },
+    {
+      "id": "bbc_world",
+      "type": "rss",
+      "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+      "category": "world",
+      "lang": "en"
+    },
+    {
+      "id": "aljazeera",
+      "type": "rss",
+      "url": "https://www.aljazeera.com/xml/rss/all.xml",
+      "category": "world",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_aww",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/aww/.rss",
+      "category": "fun",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_eyebleach",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/Eyebleach/.rss",
+      "category": "fun",
       "lang": "en"
     }
   ]
