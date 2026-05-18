@@ -51,13 +51,19 @@ def _strip_fence(text: str) -> str:
 
 
 def _parse(text: str) -> Optional[dict]:
+    logger.info("cardnews raw response (first 500): %s", text[:500])
+    stripped = _strip_fence(text)
     try:
-        data = json.loads(_strip_fence(text))
-    except json.JSONDecodeError:
-        logger.warning("non-json cardnews response: %s", text[:200])
+        data = json.loads(stripped)
+    except json.JSONDecodeError as e:
+        logger.warning("json parse failed (%s). stripped=%s", e, stripped[:300])
         return None
     slides = data.get("slides")
-    if not isinstance(slides, list) or len(slides) < 3:
+    if not isinstance(slides, list):
+        logger.warning("slides field missing or not a list. keys=%s", list(data.keys()))
+        return None
+    if len(slides) < 3:
+        logger.warning("too few slides: %d", len(slides))
         return None
     cleaned: list[dict] = []
     for s in slides:
@@ -65,9 +71,11 @@ def _parse(text: str) -> Optional[dict]:
             continue
         t = s.get("type")
         if t not in {"cover", "context", "point", "outro"}:
+            logger.warning("unknown slide type: %s", t)
             continue
         cleaned.append({k: ("" if v is None else str(v)) for k, v in s.items()})
     if len(cleaned) < 3:
+        logger.warning("too few valid slides after cleanup: %d", len(cleaned))
         return None
     return {"slides": cleaned}
 

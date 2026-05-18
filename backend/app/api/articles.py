@@ -178,12 +178,20 @@ async def article_cardnews(
             status_code=401, detail="missing X-AI-Key header"
         )
 
+    title = doc.get("title", "")
+    content = doc.get("content") or ""
+    if len(content.strip()) < 30:
+        raise HTTPException(
+            status_code=422,
+            detail="기사 본문이 너무 짧아 카드뉴스를 생성할 수 없습니다. 본문이 있는 다른 기사를 선택해 주세요.",
+        )
+
     try:
         result = await generate_cardnews(
             provider=provider,
             api_key=x_ai_key,
-            title=doc.get("title", ""),
-            content=doc.get("content") or "",
+            title=title,
+            content=content,
             model=x_ai_model or None,
         )
     except ProviderError as e:
@@ -192,7 +200,7 @@ async def article_cardnews(
     if not result:
         raise HTTPException(
             status_code=502,
-            detail="카드뉴스 생성 결과를 해석하지 못했습니다. 모델 응답 형식을 확인해 주세요.",
+            detail="AI 응답을 슬라이드로 변환하지 못했습니다. 잠시 후 다시 시도해 주세요.",
         )
 
     await db.articles.update_one(
