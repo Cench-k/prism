@@ -48,7 +48,7 @@ export default function MagazineCard({ article, onSwipeUp }: Props) {
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40" />
 
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-5 pt-5">
+      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-5 pt-16">
         <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm">
           {CATEGORY_LABEL[article.category] ?? article.category}
         </span>

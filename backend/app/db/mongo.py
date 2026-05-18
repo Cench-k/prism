@@ -19,4 +19,8 @@ async def ensure_indexes() -> None:
     db = get_db()
     await db.articles.create_index("url", unique=True)
     await db.articles.create_index([("category", 1), ("published_at", -1)])
-    await db.articles.create_index("collected_at")
+    try:
+        await db.articles.drop_index("collected_at_1")
+    except Exception:
+        pass
+    await db.articles.create_index("collected_at", expireAfterSeconds=172800)
