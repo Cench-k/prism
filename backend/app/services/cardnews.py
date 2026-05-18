@@ -93,7 +93,10 @@ async def _anthropic(api_key: str, model: str, title: str, content: str) -> Opti
         messages=[{"role": "user", "content": _prompt(title, content)}],
     )
     text = "".join(b.text for b in msg.content if b.type == "text")
-    return _parse(text)
+    result = _parse(text)
+    if result is None:
+        raise ProviderError(502, f"[anthropic] 파싱 실패. 모델 응답: {text[:300]}")
+    return result
 
 
 async def _openai(api_key: str, model: str, title: str, content: str) -> Optional[dict]:
@@ -114,7 +117,10 @@ async def _openai(api_key: str, model: str, title: str, content: str) -> Optiona
         resp.raise_for_status()
         data = resp.json()
     text = data["choices"][0]["message"]["content"]
-    return _parse(text)
+    result = _parse(text)
+    if result is None:
+        raise ProviderError(502, f"[openai] 파싱 실패. 모델 응답: {text[:300]}")
+    return result
 
 
 async def _gemini(api_key: str, model: str, title: str, content: str) -> Optional[dict]:
@@ -143,7 +149,10 @@ async def _gemini(api_key: str, model: str, title: str, content: str) -> Optiona
         return None
     parts = candidates[0].get("content", {}).get("parts") or []
     text = "".join(p.get("text", "") for p in parts)
-    return _parse(text)
+    result = _parse(text)
+    if result is None:
+        raise ProviderError(502, f"[gemini] 파싱 실패. 모델 응답: {text[:300]}")
+    return result
 
 
 _PROVIDERS = {
