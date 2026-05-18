@@ -12,11 +12,18 @@ export async function POST(
     if (val) headers[key] = val;
   }
 
-  const res = await fetch(`${BACKEND}/api/articles/${params.id}/summarize`, {
-    method: "POST",
-    headers,
-  });
-
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  try {
+    const res = await fetch(`${BACKEND}/api/articles/${params.id}/summarize`, {
+      method: "POST",
+      headers,
+    });
+    const data = await res.json().catch(() => ({ detail: `백엔드 응답 파싱 실패 (status: ${res.status})` }));
+    return NextResponse.json(data, { status: res.status });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      { detail: `백엔드 연결 실패: ${msg}` },
+      { status: 502 }
+    );
+  }
 }

@@ -15,11 +15,18 @@ export async function POST(
   const reqUrl = new URL(request.url);
   const qs = reqUrl.searchParams.get("regenerate") ? "?regenerate=true" : "";
 
-  const res = await fetch(`${BACKEND}/api/articles/${params.id}/cardnews${qs}`, {
-    method: "POST",
-    headers,
-  });
-
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  try {
+    const res = await fetch(`${BACKEND}/api/articles/${params.id}/cardnews${qs}`, {
+      method: "POST",
+      headers,
+    });
+    const data = await res.json().catch(() => ({ detail: `백엔드 응답 파싱 실패 (status: ${res.status})` }));
+    return NextResponse.json(data, { status: res.status });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      { detail: `백엔드 연결 실패: ${msg}` },
+      { status: 502 }
+    );
+  }
 }
