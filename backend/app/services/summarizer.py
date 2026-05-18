@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Optional
 
 import httpx
@@ -31,10 +32,12 @@ DEFAULT_MODELS: dict[str, str] = {
 
 def _strip_fence(text: str) -> str:
     text = text.strip()
-    if text.startswith("```"):
-        text = text.strip("`").strip()
-        if text.lower().startswith("json"):
-            text = text[4:].strip()
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    if m:
+        return m.group(0).strip()
     return text
 
 
