@@ -3,6 +3,16 @@ export type Summary = {
   background: string;
 };
 
+export type CardSlide =
+  | { type: "cover"; title: string; subtitle?: string }
+  | { type: "context"; body: string }
+  | { type: "point"; heading: string; body: string }
+  | { type: "outro"; headline: string; cta?: string };
+
+export type CardNews = {
+  slides: CardSlide[];
+};
+
 export type Article = {
   _id: string;
   source_id: string;
@@ -14,6 +24,7 @@ export type Article = {
   image_url?: string | null;
   content?: string | null;
   summary?: Summary | null;
+  cardnews?: CardNews | null;
   meta_data?: Record<string, unknown>;
   published_at?: string | null;
   collected_at: string;

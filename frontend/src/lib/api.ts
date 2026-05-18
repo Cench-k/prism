@@ -1,4 +1,9 @@
-import type { ArticleListResponse, CryptoTicker, Summary } from "@/types/article";
+import type {
+  ArticleListResponse,
+  CardNews,
+  CryptoTicker,
+  Summary,
+} from "@/types/article";
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
@@ -69,6 +74,28 @@ export async function summarizeArticle(
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail.detail || `summarize failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function generateCardNews(
+  articleId: string,
+  cfg: { provider: string; apiKey: string; model?: string; regenerate?: boolean }
+): Promise<{ cardnews: CardNews; cached: boolean }> {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    "X-AI-Provider": cfg.provider,
+    "X-AI-Key": cfg.apiKey,
+  };
+  if (cfg.model) headers["X-AI-Model"] = cfg.model;
+  const qs = cfg.regenerate ? "?regenerate=true" : "";
+  const res = await fetch(`${BASE}/api/articles/${articleId}/cardnews${qs}`, {
+    method: "POST",
+    headers,
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `cardnews failed: ${res.status}`);
   }
   return res.json();
 }

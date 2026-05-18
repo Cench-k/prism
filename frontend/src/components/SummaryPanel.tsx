@@ -12,9 +12,10 @@ type Props = {
   article: Article | null;
   open: boolean;
   onClose: () => void;
+  onMakeCardNews?: () => void;
 };
 
-export default function SummaryPanel({ article, open, onClose }: Props) {
+export default function SummaryPanel({ article, open, onClose, onMakeCardNews }: Props) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,14 +141,24 @@ export default function SummaryPanel({ article, open, onClose }: Props) {
               </div>
             )}
 
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="mt-6 inline-block text-xs text-white/60 underline-offset-4 hover:underline"
-            >
-              원문 보기 ↗
-            </a>
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="text-xs text-white/60 underline-offset-4 hover:underline"
+              >
+                원문 보기 ↗
+              </a>
+              {onMakeCardNews && (
+                <button
+                  onClick={onMakeCardNews}
+                  className="rounded-full bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition hover:bg-white/20"
+                >
+                  📱 카드뉴스 만들기
+                </button>
+              )}
+            </div>
           </motion.div>
         </>
       )}

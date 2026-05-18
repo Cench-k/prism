@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query, HTTPException, Header
 from app.db.mongo import get_db
 from app.services.market import fetch_crypto_tickers
 from app.services.summarizer import summarize, ProviderError
+from app.services.cardnews import generate_cardnews
 
 router = APIRouter()
 
@@ -140,3 +141,62 @@ async def summarize_article(
         {"$set": {"summary": summary, "summary_meta": {"provider": provider}}},
     )
     return {"summary": summary, "cached": False}
+
+
+@router.post("/articles/{article_id}/cardnews")
+async def article_cardnews(
+    article_id: str,
+    regenerate: bool = False,
+    x_ai_provider: Optional[str] = Header(default=None, alias="X-AI-Provider"),
+    x_ai_key: Optional[str] = Header(default=None, alias="X-AI-Key"),
+    x_ai_model: Optional[str] = Header(default=None, alias="X-AI-Model"),
+):
+    """기사를 5장 카드뉴스 슬라이드 JSON으로 변환. 결과는 DB에 캐시(공유)."""
+    from bson import ObjectId
+
+    db = get_db()
+    try:
+        oid = ObjectId(article_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid id")
+
+    doc = await db.articles.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="not found")
+
+    if not regenerate and doc.get("cardnews"):
+        return {"cardnews": doc["cardnews"], "cached": True}
+
+    provider = (x_ai_provider or "").lower().strip()
+    if provider not in _ALLOWED_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"X-AI-Provider must be one of {sorted(_ALLOWED_PROVIDERS)}",
+        )
+    if not x_ai_key:
+        raise HTTPException(
+            status_code=401, detail="missing X-AI-Key header"
+        )
+
+    try:
+        result = await generate_cardnews(
+            provider=provider,
+            api_key=x_ai_key,
+            title=doc.get("title", ""),
+            content=doc.get("content") or "",
+            model=x_ai_model or None,
+        )
+    except ProviderError as e:
+        raise HTTPException(status_code=e.status, detail=e.message)
+
+    if not result:
+        raise HTTPException(
+            status_code=502,
+            detail="카드뉴스 생성 결과를 해석하지 못했습니다. 모델 응답 형식을 확인해 주세요.",
+        )
+
+    await db.articles.update_one(
+        {"_id": oid},
+        {"$set": {"cardnews": result, "cardnews_meta": {"provider": provider}}},
+    )
+    return {"cardnews": result, "cached": False}

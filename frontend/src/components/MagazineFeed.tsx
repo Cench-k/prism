@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MagazineCard from "./MagazineCard";
 import SummaryPanel from "./SummaryPanel";
+import CardNewsModal from "./cardnews/CardNewsModal";
 import { fetchArticles, fetchCategories, type CategoryItem } from "@/lib/api";
 import { ALL_CATEGORY, labelFor } from "@/lib/categories";
 import type { Article } from "@/types/article";
@@ -21,6 +22,7 @@ export default function MagazineFeed() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [cardNewsIdx, setCardNewsIdx] = useState<number | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const feedScrollerRef = useRef<HTMLDivElement>(null);
 
@@ -185,6 +187,20 @@ export default function MagazineFeed() {
         article={activeArticle}
         open={open}
         onClose={() => setOpenIdx(null)}
+        onMakeCardNews={
+          openIdx !== null
+            ? () => {
+                setCardNewsIdx(openIdx);
+                setOpenIdx(null);
+              }
+            : undefined
+        }
+      />
+
+      <CardNewsModal
+        article={cardNewsIdx !== null ? articles[cardNewsIdx] : null}
+        open={cardNewsIdx !== null}
+        onClose={() => setCardNewsIdx(null)}
       />
     </main>
   );
