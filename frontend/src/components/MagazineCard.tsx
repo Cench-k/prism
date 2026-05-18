@@ -25,6 +25,13 @@ type Props = {
   onSwipeUp: () => void;
 };
 
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+}
+
 export default function MagazineCard({ article, onSwipeUp }: Props) {
   const y = useMotionValue(0);
   const overlayOpacity = useTransform(y, [-200, 0], [0.5, 0]);
@@ -65,6 +72,11 @@ export default function MagazineCard({ article, onSwipeUp }: Props) {
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-16">
+        {formatDate(article.published_at ?? article.collected_at) && (
+          <p className="mb-2 text-[11px] tracking-widest text-white/50">
+            {formatDate(article.published_at ?? article.collected_at)}
+          </p>
+        )}
         <h1 className="font-serif text-3xl font-bold leading-[1.2] text-white drop-shadow-md sm:text-4xl">
           {article.title}
         </h1>
