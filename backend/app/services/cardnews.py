@@ -51,7 +51,7 @@ def _strip_fence(text: str) -> str:
 
 
 def _parse(text: str) -> Optional[dict]:
-    logger.info("cardnews raw response (first 500): %s", text[:500])
+    logger.warning("cardnews raw response (first 500): %s", text[:500])
     stripped = _strip_fence(text)
     try:
         data = json.loads(stripped)
