@@ -24,10 +24,14 @@ export async function fetchCryptoWidget(): Promise<{ tickers: CryptoTicker[] }> 
 
 export async function summarizeArticle(
   articleId: string,
-  apiKey: string | null
+  cfg: { provider: string; apiKey: string; model?: string }
 ): Promise<{ summary: Summary; cached: boolean }> {
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (apiKey) headers["X-Anthropic-Key"] = apiKey;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    "X-AI-Provider": cfg.provider,
+    "X-AI-Key": cfg.apiKey,
+  };
+  if (cfg.model) headers["X-AI-Model"] = cfg.model;
   const res = await fetch(`${BASE}/api/articles/${articleId}/summarize`, {
     method: "POST",
     headers,

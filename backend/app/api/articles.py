@@ -1,10 +1,9 @@
 from typing import Optional
 from fastapi import APIRouter, Query, HTTPException, Header
-from anthropic import APIStatusError, APIConnectionError, AuthenticationError
 
 from app.db.mongo import get_db
 from app.services.market import fetch_crypto_tickers
-from app.services.summarizer import summarize_with_key
+from app.services.summarizer import summarize, ProviderError
 
 router = APIRouter()
 
@@ -67,12 +66,17 @@ async def crypto_widget():
     return {"tickers": tickers}
 
 
+_ALLOWED_PROVIDERS = {"anthropic", "openai", "gemini"}
+
+
 @router.post("/articles/{article_id}/summarize")
 async def summarize_article(
     article_id: str,
-    x_anthropic_key: Optional[str] = Header(default=None, alias="X-Anthropic-Key"),
+    x_ai_provider: Optional[str] = Header(default=None, alias="X-AI-Provider"),
+    x_ai_key: Optional[str] = Header(default=None, alias="X-AI-Key"),
+    x_ai_model: Optional[str] = Header(default=None, alias="X-AI-Model"),
 ):
-    """사용자 키로 1회성 요약. 기존 summary가 있으면 그대로 반환(공유 캐시)."""
+    """사용자 키 + provider 선택으로 요약. 결과는 DB에 캐시(전 사용자 공유)."""
     from bson import ObjectId
 
     db = get_db()
@@ -88,25 +92,34 @@ async def summarize_article(
     if doc.get("summary"):
         return {"summary": doc["summary"], "cached": True}
 
-    if not x_anthropic_key:
+    provider = (x_ai_provider or "").lower().strip()
+    if provider not in _ALLOWED_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"X-AI-Provider must be one of {sorted(_ALLOWED_PROVIDERS)}",
+        )
+    if not x_ai_key:
         raise HTTPException(
             status_code=401,
-            detail="missing X-Anthropic-Key header — set your key in Settings",
+            detail="missing X-AI-Key header — set your key in Settings",
         )
 
     try:
-        summary = await summarize_with_key(
-            x_anthropic_key,
-            doc.get("title", ""),
-            doc.get("content") or "",
+        summary = await summarize(
+            provider=provider,
+            api_key=x_ai_key,
+            title=doc.get("title", ""),
+            content=doc.get("content") or "",
+            model=x_ai_model or None,
         )
-    except AuthenticationError:
-        raise HTTPException(status_code=401, detail="invalid Anthropic API key")
-    except (APIStatusError, APIConnectionError) as e:
-        raise HTTPException(status_code=502, detail=f"anthropic upstream: {e}")
+    except ProviderError as e:
+        raise HTTPException(status_code=e.status, detail=e.message)
 
     if not summary:
-        raise HTTPException(status_code=502, detail="failed to parse summary")
+        raise HTTPException(status_code=502, detail="failed to parse summary response")
 
-    await db.articles.update_one({"_id": oid}, {"$set": {"summary": summary}})
+    await db.articles.update_one(
+        {"_id": oid},
+        {"$set": {"summary": summary, "summary_meta": {"provider": provider}}},
+    )
     return {"summary": summary, "cached": False}

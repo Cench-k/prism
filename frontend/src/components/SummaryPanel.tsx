@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { Article, Summary } from "@/types/article";
-import { getApiKey } from "@/lib/settings";
+import { getApiKey, getProvider, getModel, hasUsableConfig } from "@/lib/settings";
 import { summarizeArticle } from "@/lib/api";
 import CryptoWidget from "./CryptoWidget";
 
@@ -21,7 +21,7 @@ export default function SummaryPanel({ article, open, onClose }: Props) {
   const [hasKey, setHasKey] = useState(false);
 
   useEffect(() => {
-    setHasKey(!!getApiKey());
+    setHasKey(hasUsableConfig());
   }, [open]);
 
   useEffect(() => {
@@ -31,11 +31,17 @@ export default function SummaryPanel({ article, open, onClose }: Props) {
 
   const onGenerate = async () => {
     if (!article) return;
-    const key = getApiKey();
+    const apiKey = getApiKey();
+    const provider = getProvider();
+    const model = getModel();
     setLoading(true);
     setError(null);
     try {
-      const res = await summarizeArticle(article._id, key);
+      const res = await summarizeArticle(article._id, {
+        provider,
+        apiKey,
+        model: model || undefined,
+      });
       setSummary(res.summary);
     } catch (e) {
       setError(e instanceof Error ? e.message : "요약 생성 실패");

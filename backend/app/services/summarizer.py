@@ -1,12 +1,13 @@
-"""사용자 키 기반 stateless 요약 서비스 (BYOK)."""
+"""다중 provider 요약 디스패처 (Anthropic / OpenAI / Gemini). 키는 사용 직후 폐기."""
+
+from __future__ import annotations
 
 import json
 import logging
 from typing import Optional
 
+import httpx
 from anthropic import AsyncAnthropic
-
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,14 @@ _SYSTEM = (
 )
 
 
-def _strip_code_fence(text: str) -> str:
+DEFAULT_MODELS: dict[str, str] = {
+    "anthropic": "claude-haiku-4-5-20251001",
+    "openai": "gpt-4o-mini",
+    "gemini": "gemini-1.5-flash",
+}
+
+
+def _strip_fence(text: str) -> str:
     text = text.strip()
     if text.startswith("```"):
         text = text.strip("`").strip()
@@ -30,30 +38,9 @@ def _strip_code_fence(text: str) -> str:
     return text
 
 
-async def summarize_with_key(
-    api_key: str,
-    title: str,
-    content: str,
-    model: Optional[str] = None,
-) -> Optional[dict]:
-    """주어진 키로 1회성 Claude 호출. 키는 호출 직후 폐기."""
-    if not api_key:
-        return None
-    client = AsyncAnthropic(api_key=api_key)
-    prompt = f"제목: {title}\n\n본문:\n{(content or '')[:3000]}"
+def _parse(text: str) -> Optional[dict]:
     try:
-        msg = await client.messages.create(
-            model=model or settings.anthropic_model,
-            max_tokens=400,
-            system=_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
-        )
-    except Exception:
-        logger.exception("anthropic call failed")
-        raise
-    text = "".join(block.text for block in msg.content if block.type == "text")
-    try:
-        data = json.loads(_strip_code_fence(text))
+        data = json.loads(_strip_fence(text))
     except json.JSONDecodeError:
         logger.warning("non-json summary response: %s", text[:200])
         return None
@@ -62,3 +49,116 @@ async def summarize_with_key(
     if not headline or not background:
         return None
     return {"headline": headline, "background": background}
+
+
+def _build_prompt(title: str, content: str) -> str:
+    return f"제목: {title}\n\n본문:\n{(content or '')[:3000]}"
+
+
+async def _anthropic(api_key: str, model: str, title: str, content: str) -> Optional[dict]:
+    client = AsyncAnthropic(api_key=api_key)
+    msg = await client.messages.create(
+        model=model,
+        max_tokens=400,
+        system=_SYSTEM,
+        messages=[{"role": "user", "content": _build_prompt(title, content)}],
+    )
+    text = "".join(b.text for b in msg.content if b.type == "text")
+    return _parse(text)
+
+
+async def _openai(api_key: str, model: str, title: str, content: str) -> Optional[dict]:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": _SYSTEM},
+                    {"role": "user", "content": _build_prompt(title, content)},
+                ],
+                "response_format": {"type": "json_object"},
+                "max_tokens": 400,
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    text = data["choices"][0]["message"]["content"]
+    return _parse(text)
+
+
+async def _gemini(api_key: str, model: str, title: str, content: str) -> Optional[dict]:
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        f"?key={api_key}"
+    )
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(
+            url,
+            json={
+                "contents": [
+                    {"role": "user", "parts": [{"text": _build_prompt(title, content)}]}
+                ],
+                "systemInstruction": {"parts": [{"text": _SYSTEM}]},
+                "generationConfig": {
+                    "responseMimeType": "application/json",
+                    "maxOutputTokens": 400,
+                },
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    candidates = data.get("candidates") or []
+    if not candidates:
+        return None
+    parts = candidates[0].get("content", {}).get("parts") or []
+    text = "".join(p.get("text", "") for p in parts)
+    return _parse(text)
+
+
+_PROVIDERS = {
+    "anthropic": _anthropic,
+    "openai": _openai,
+    "gemini": _gemini,
+}
+
+
+class ProviderError(Exception):
+    """provider 자체 오류 (잘못된 키, rate limit, upstream)."""
+
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status = status
+        self.message = message
+
+
+async def summarize(
+    provider: str,
+    api_key: str,
+    title: str,
+    content: str,
+    model: Optional[str] = None,
+) -> Optional[dict]:
+    fn = _PROVIDERS.get(provider)
+    if fn is None:
+        raise ProviderError(400, f"unsupported provider: {provider}")
+    if not api_key:
+        raise ProviderError(401, "missing api key")
+    chosen_model = model or DEFAULT_MODELS[provider]
+    try:
+        return await fn(api_key, chosen_model, title, content)
+    except httpx.HTTPStatusError as e:
+        status = e.response.status_code
+        body = e.response.text[:300]
+        if status in (401, 403):
+            raise ProviderError(401, "invalid or unauthorized api key") from e
+        raise ProviderError(502, f"{provider} upstream {status}: {body}") from e
+    except httpx.HTTPError as e:
+        raise ProviderError(502, f"{provider} network error: {e}") from e
+    except Exception as e:
+        # anthropic SDK 등에서 던지는 예외는 메시지에서 401 추정
+        msg = str(e)
+        if "401" in msg or "authentication" in msg.lower():
+            raise ProviderError(401, "invalid or unauthorized api key") from e
+        raise ProviderError(502, f"{provider} error: {msg}") from e
