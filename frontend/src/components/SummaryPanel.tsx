@@ -1,7 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import type { Article } from "@/types/article";
+import { useEffect, useState } from "react";
+import type { Article, Summary } from "@/types/article";
+import { getApiKey } from "@/lib/settings";
+import { summarizeArticle } from "@/lib/api";
 import CryptoWidget from "./CryptoWidget";
 
 type Props = {
@@ -11,6 +15,35 @@ type Props = {
 };
 
 export default function SummaryPanel({ article, open, onClose }: Props) {
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasKey, setHasKey] = useState(false);
+
+  useEffect(() => {
+    setHasKey(!!getApiKey());
+  }, [open]);
+
+  useEffect(() => {
+    setSummary(article?.summary ?? null);
+    setError(null);
+  }, [article]);
+
+  const onGenerate = async () => {
+    if (!article) return;
+    const key = getApiKey();
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await summarizeArticle(article._id, key);
+      setSummary(res.summary);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "요약 생성 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && article && (
@@ -37,19 +70,21 @@ export default function SummaryPanel({ article, open, onClose }: Props) {
             className="glass absolute inset-x-0 bottom-0 z-40 rounded-t-3xl px-6 pt-3 pb-10"
           >
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/30" />
+
             {article.category === "crypto" && (
               <div className="mb-4">
                 <CryptoWidget />
               </div>
             )}
-            {article.summary ? (
+
+            {summary ? (
               <div className="space-y-5">
                 <div>
                   <div className="mb-1 text-xs uppercase tracking-[0.2em] text-white/50">
                     💡 핵심 결론
                   </div>
                   <p className="text-lg font-semibold leading-snug text-white">
-                    {article.summary.headline}
+                    {summary.headline}
                   </p>
                 </div>
                 <div>
@@ -57,15 +92,38 @@ export default function SummaryPanel({ article, open, onClose }: Props) {
                     📌 배경과 전망
                   </div>
                   <p className="text-sm leading-relaxed text-white/85">
-                    {article.summary.background}
+                    {summary.background}
                   </p>
                 </div>
               </div>
+            ) : hasKey ? (
+              <div className="space-y-3 py-3">
+                <p className="text-sm text-white/70">
+                  이 기사의 AI 요약이 아직 없습니다.
+                </p>
+                <button
+                  onClick={onGenerate}
+                  disabled={loading}
+                  className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90 disabled:opacity-50"
+                >
+                  {loading ? "요약 생성 중…" : "💡 AI 요약 생성하기"}
+                </button>
+                {error && <p className="text-xs text-rose-400">{error}</p>}
+              </div>
             ) : (
-              <p className="text-sm text-white/70">
-                요약이 아직 준비되지 않았습니다.
-              </p>
+              <div className="space-y-3 py-3">
+                <p className="text-sm text-white/70">
+                  AI 요약을 보려면 Anthropic API 키를 설정해 주세요.
+                </p>
+                <Link
+                  href="/settings"
+                  className="inline-block rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90"
+                >
+                  ⚙ 설정으로 이동
+                </Link>
+              </div>
             )}
+
             <a
               href={article.url}
               target="_blank"

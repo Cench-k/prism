@@ -1,6 +1,14 @@
+"""사용자 키 기반 stateless 요약 서비스 (BYOK)."""
+
 import json
+import logging
+from typing import Optional
+
 from anthropic import AsyncAnthropic
+
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _SYSTEM = (
     "당신은 한국어 뉴스 매거진 편집자입니다. "
@@ -13,38 +21,44 @@ _SYSTEM = (
 )
 
 
-class Summarizer:
-    def __init__(self) -> None:
-        if not settings.anthropic_api_key:
-            self.client = None
-        else:
-            self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-        self.model = settings.anthropic_model
+def _strip_code_fence(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.strip("`").strip()
+        if text.lower().startswith("json"):
+            text = text[4:].strip()
+    return text
 
-    async def summarize(self, title: str, content: str) -> dict[str, str] | None:
-        if not self.client:
-            return None
-        prompt = f"제목: {title}\n\n본문:\n{content[:3000]}"
-        msg = await self.client.messages.create(
-            model=self.model,
+
+async def summarize_with_key(
+    api_key: str,
+    title: str,
+    content: str,
+    model: Optional[str] = None,
+) -> Optional[dict]:
+    """주어진 키로 1회성 Claude 호출. 키는 호출 직후 폐기."""
+    if not api_key:
+        return None
+    client = AsyncAnthropic(api_key=api_key)
+    prompt = f"제목: {title}\n\n본문:\n{(content or '')[:3000]}"
+    try:
+        msg = await client.messages.create(
+            model=model or settings.anthropic_model,
             max_tokens=400,
             system=_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = "".join(block.text for block in msg.content if block.type == "text").strip()
-        if text.startswith("```"):
-            text = text.strip("`")
-            if text.lower().startswith("json"):
-                text = text[4:].strip()
-        try:
-            data = json.loads(text)
-        except json.JSONDecodeError:
-            return None
-        headline = str(data.get("headline", "")).strip()
-        background = str(data.get("background", "")).strip()
-        if not headline or not background:
-            return None
-        return {"headline": headline, "background": background}
-
-
-summarizer = Summarizer()
+    except Exception:
+        logger.exception("anthropic call failed")
+        raise
+    text = "".join(block.text for block in msg.content if block.type == "text")
+    try:
+        data = json.loads(_strip_code_fence(text))
+    except json.JSONDecodeError:
+        logger.warning("non-json summary response: %s", text[:200])
+        return None
+    headline = str(data.get("headline", "")).strip()
+    background = str(data.get("background", "")).strip()
+    if not headline or not background:
+        return None
+    return {"headline": headline, "background": background}

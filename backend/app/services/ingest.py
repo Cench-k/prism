@@ -1,4 +1,4 @@
-"""수집 파이프라인 — CLI와 admin API에서 공유하는 핵심 로직."""
+"""수집 파이프라인 — 기사를 수집/정규화/저장만. 요약은 사용자 키 기반 on-demand."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from pymongo.errors import DuplicateKeyError
 
 from app.collectors.factory import build_collector
 from app.db.mongo import get_db, ensure_indexes
-from app.services.summarizer import summarizer
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +36,6 @@ async def process_source(source: dict) -> tuple[int, int]:
         if existing:
             skipped += 1
             continue
-        if summarizer.client:
-            try:
-                summary = await summarizer.summarize(
-                    item["title"], item.get("content") or ""
-                )
-                if summary:
-                    item["summary"] = summary
-            except Exception as e:
-                logger.warning("summary failed for %s: %s", item.get("url"), e)
         try:
             await db.articles.insert_one(item)
             inserted += 1

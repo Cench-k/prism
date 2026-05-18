@@ -1,8 +1,10 @@
 from typing import Optional
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Header
+from anthropic import APIStatusError, APIConnectionError, AuthenticationError
 
 from app.db.mongo import get_db
 from app.services.market import fetch_crypto_tickers
+from app.services.summarizer import summarize_with_key
 
 router = APIRouter()
 
@@ -63,3 +65,48 @@ async def crypto_widget():
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"upstream error: {e}")
     return {"tickers": tickers}
+
+
+@router.post("/articles/{article_id}/summarize")
+async def summarize_article(
+    article_id: str,
+    x_anthropic_key: Optional[str] = Header(default=None, alias="X-Anthropic-Key"),
+):
+    """사용자 키로 1회성 요약. 기존 summary가 있으면 그대로 반환(공유 캐시)."""
+    from bson import ObjectId
+
+    db = get_db()
+    try:
+        oid = ObjectId(article_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid id")
+
+    doc = await db.articles.find_one({"_id": oid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="not found")
+
+    if doc.get("summary"):
+        return {"summary": doc["summary"], "cached": True}
+
+    if not x_anthropic_key:
+        raise HTTPException(
+            status_code=401,
+            detail="missing X-Anthropic-Key header — set your key in Settings",
+        )
+
+    try:
+        summary = await summarize_with_key(
+            x_anthropic_key,
+            doc.get("title", ""),
+            doc.get("content") or "",
+        )
+    except AuthenticationError:
+        raise HTTPException(status_code=401, detail="invalid Anthropic API key")
+    except (APIStatusError, APIConnectionError) as e:
+        raise HTTPException(status_code=502, detail=f"anthropic upstream: {e}")
+
+    if not summary:
+        raise HTTPException(status_code=502, detail="failed to parse summary")
+
+    await db.articles.update_one({"_id": oid}, {"$set": {"summary": summary}})
+    return {"summary": summary, "cached": False}

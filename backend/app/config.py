@@ -6,7 +6,6 @@ class Settings(BaseSettings):
 
     mongo_uri: str = "mongodb://localhost:27017"
     mongo_db: str = "prism"
-    anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"
     cors_origins: str = "http://localhost:3000"
     ingest_token: str = ""
