@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PROVIDERS,
   PROVIDER_META,
@@ -15,25 +15,53 @@ import {
   setModel as saveModel,
 } from "@/lib/settings";
 
+const CUSTOM_OPTION = "__custom__";
+
 export default function SettingsPage() {
   const [provider, setProviderState] = useState<AiProvider>("anthropic");
   const [key, setKey] = useState("");
-  const [model, setModelState] = useState("");
+  const [modelSelect, setModelSelect] = useState<string>("");
+  const [customModel, setCustomModel] = useState("");
   const [show, setShow] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const meta = PROVIDER_META[provider];
+
   useEffect(() => {
-    setProviderState(getProvider());
+    const p = getProvider();
+    setProviderState(p);
     setKey(getApiKey());
-    setModelState(getModel());
+
+    const storedModel = getModel();
+    if (!storedModel) {
+      setModelSelect("");
+    } else {
+      const inCatalog = PROVIDER_META[p].models.some((m) => m.id === storedModel);
+      if (inCatalog) {
+        setModelSelect(storedModel);
+        setCustomModel("");
+      } else {
+        setModelSelect(CUSTOM_OPTION);
+        setCustomModel(storedModel);
+      }
+    }
   }, []);
 
-  const meta = PROVIDER_META[provider];
+  const effectiveModel = useMemo(() => {
+    if (modelSelect === CUSTOM_OPTION) return customModel.trim();
+    return modelSelect; // "" 이면 기본값 사용
+  }, [modelSelect, customModel]);
+
+  const onProviderChange = (p: AiProvider) => {
+    setProviderState(p);
+    setModelSelect("");
+    setCustomModel("");
+  };
 
   const onSave = () => {
     saveProvider(provider);
     saveApiKey(key);
-    saveModel(model);
+    saveModel(effectiveModel);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   };
@@ -43,11 +71,6 @@ export default function SettingsPage() {
     setKey("");
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
-  };
-
-  const onProviderChange = (p: AiProvider) => {
-    setProviderState(p);
-    // 모델이 비어있을 때만 기본값 힌트 변경. 사용자가 명시한 모델은 유지.
   };
 
   return (
@@ -67,6 +90,7 @@ export default function SettingsPage() {
         </p>
 
         <section className="space-y-6">
+          {/* Provider */}
           <div>
             <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-white/50">
               AI 제공사
@@ -89,6 +113,7 @@ export default function SettingsPage() {
             <p className="mt-2 text-[11px] text-white/40">{meta.label}</p>
           </div>
 
+          {/* API Key */}
           <div>
             <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-white/50">
               API Key
@@ -113,22 +138,50 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Model */}
           <div>
             <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-white/50">
-              모델 <span className="ml-1 text-white/40">(선택)</span>
+              모델
             </label>
-            <input
-              type="text"
-              value={model}
-              onChange={(e) => setModelState(e.target.value)}
-              placeholder={`기본값: ${meta.defaultModel}`}
-              spellCheck={false}
-              autoComplete="off"
-              className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none"
-            />
-            <p className="mt-1 text-[11px] text-white/40">
-              비워두면 기본 모델을 사용합니다.
-            </p>
+            <select
+              value={modelSelect}
+              onChange={(e) => setModelSelect(e.target.value)}
+              className="w-full appearance-none rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-white/40 focus:outline-none"
+            >
+              <option value="" className="bg-black">
+                기본값 ({meta.defaultModel})
+              </option>
+              {meta.models.map((m) => (
+                <option key={m.id} value={m.id} className="bg-black">
+                  {m.label}
+                  {m.tag ? ` · ${m.tag}` : ""}
+                </option>
+              ))}
+              <option value={CUSTOM_OPTION} className="bg-black">
+                직접 입력…
+              </option>
+            </select>
+
+            {modelSelect === CUSTOM_OPTION && (
+              <input
+                type="text"
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                placeholder="모델 ID 직접 입력 (예: claude-opus-4-7)"
+                spellCheck={false}
+                autoComplete="off"
+                className="mt-2 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none"
+              />
+            )}
+
+            {modelSelect && modelSelect !== CUSTOM_OPTION && (
+              <p className="mt-2 text-[11px] text-white/40">
+                {meta.models.find((m) => m.id === modelSelect)?.tag === "무료 한도" &&
+                  "✅ 이 모델은 무료 한도 내에서 사용 가능합니다 (provider 정책 적용)."}
+                {meta.models.find((m) => m.id === modelSelect)?.tag === "고품질" &&
+                  "⚠️ 고품질 모델은 호출 비용이 상대적으로 높습니다."}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 pt-2">
@@ -152,7 +205,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="mt-12 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm leading-relaxed text-white/70">
-          <h2 className="font-semibold text-white">{meta.label} 키 발급 방법</h2>
+          <h2 className="font-semibold text-white">{meta.label} 키 발급</h2>
           <ol className="list-decimal space-y-1 pl-5">
             <li>
               <a
@@ -169,6 +222,10 @@ export default function SettingsPage() {
           </ol>
           <p className="text-xs text-white/40">{meta.pricingNote}</p>
         </section>
+
+        <p className="mt-6 text-[11px] leading-relaxed text-white/40">
+          💡 모델 ID가 정확하지 않으면 요약 생성 시 오류 메시지가 표시됩니다. 그럴 땐 위 드롭다운에서 다른 모델을 고르거나 “기본값”을 선택하세요.
+        </p>
       </div>
     </main>
   );

@@ -114,7 +114,17 @@ export default function SummaryPanel({ article, open, onClose }: Props) {
                 >
                   {loading ? "요약 생성 중…" : "💡 AI 요약 생성하기"}
                 </button>
-                {error && <p className="text-xs text-rose-400">{error}</p>}
+                {error && (
+                  <div className="space-y-2 rounded-xl border border-rose-400/30 bg-rose-400/5 p-3">
+                    <p className="text-xs leading-relaxed text-rose-300">⚠️ {error}</p>
+                    <Link
+                      href="/settings"
+                      className="inline-block text-[11px] text-white/70 underline underline-offset-2 hover:text-white"
+                    >
+                      설정에서 키/모델 변경 →
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-3 py-3">

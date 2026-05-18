@@ -25,7 +25,7 @@ _SYSTEM = (
 DEFAULT_MODELS: dict[str, str] = {
     "anthropic": "claude-haiku-4-5-20251001",
     "openai": "gpt-4o-mini",
-    "gemini": "gemini-1.5-flash",
+    "gemini": "gemini-2.0-flash",
 }
 
 
@@ -133,6 +133,32 @@ class ProviderError(Exception):
         self.message = message
 
 
+_MODEL_NOT_FOUND_HINTS = (
+    "model not found",
+    "invalid model",
+    "does not exist",
+    "no such model",
+    "not_found_error",
+    "model_not_found",
+    "is not supported",
+)
+
+
+def _is_model_not_found(msg: str) -> bool:
+    low = msg.lower()
+    return any(h in low for h in _MODEL_NOT_FOUND_HINTS) or (
+        "model" in low and "not found" in low
+    )
+
+
+_RATE_LIMIT_HINTS = ("rate_limit", "quota", "429", "too many requests", "exceeded")
+
+
+def _is_rate_limit(msg: str) -> bool:
+    low = msg.lower()
+    return any(h in low for h in _RATE_LIMIT_HINTS)
+
+
 async def summarize(
     provider: str,
     api_key: str,
@@ -150,15 +176,37 @@ async def summarize(
         return await fn(api_key, chosen_model, title, content)
     except httpx.HTTPStatusError as e:
         status = e.response.status_code
-        body = e.response.text[:300]
+        body = e.response.text[:400]
         if status in (401, 403):
-            raise ProviderError(401, "invalid or unauthorized api key") from e
-        raise ProviderError(502, f"{provider} upstream {status}: {body}") from e
+            raise ProviderError(
+                401, "API 키가 유효하지 않거나 권한이 없습니다. 설정에서 키를 확인해주세요."
+            ) from e
+        if status == 404 or _is_model_not_found(body):
+            raise ProviderError(
+                400,
+                f"'{chosen_model}' 모델을 찾을 수 없습니다. 설정에서 다른 모델을 선택하거나 비워두세요(기본값 사용).",
+            ) from e
+        if status == 429 or _is_rate_limit(body):
+            raise ProviderError(
+                429, f"{provider} 사용 한도를 초과했거나 요청이 너무 잦습니다. 잠시 후 다시 시도해주세요."
+            ) from e
+        raise ProviderError(502, f"{provider} 오류 ({status}): {body}") from e
     except httpx.HTTPError as e:
-        raise ProviderError(502, f"{provider} network error: {e}") from e
+        raise ProviderError(502, f"{provider} 네트워크 오류: {e}") from e
     except Exception as e:
-        # anthropic SDK 등에서 던지는 예외는 메시지에서 401 추정
+        # anthropic SDK 등에서 던지는 예외는 메시지로 분류
         msg = str(e)
         if "401" in msg or "authentication" in msg.lower():
-            raise ProviderError(401, "invalid or unauthorized api key") from e
-        raise ProviderError(502, f"{provider} error: {msg}") from e
+            raise ProviderError(
+                401, "API 키가 유효하지 않거나 권한이 없습니다. 설정에서 키를 확인해주세요."
+            ) from e
+        if _is_model_not_found(msg):
+            raise ProviderError(
+                400,
+                f"'{chosen_model}' 모델을 찾을 수 없습니다. 설정에서 다른 모델을 선택하거나 비워두세요(기본값 사용).",
+            ) from e
+        if _is_rate_limit(msg):
+            raise ProviderError(
+                429, f"{provider} 사용 한도를 초과했거나 요청이 너무 잦습니다. 잠시 후 다시 시도해주세요."
+            ) from e
+        raise ProviderError(502, f"{provider} 오류: {msg}") from e
