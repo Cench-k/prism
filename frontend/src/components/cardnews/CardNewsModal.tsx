@@ -22,6 +22,24 @@ function safeFilename(s: string): string {
     .slice(0, 40) || "card";
 }
 
+function buildCaption(article: Article): string {
+  const parts: string[] = [];
+  if (article.summary) {
+    parts.push(article.summary.headline);
+    parts.push(article.summary.background);
+  } else if (article.content) {
+    const trimmed = article.content.slice(0, 180);
+    parts.push(trimmed + (article.content.length > 180 ? "…" : ""));
+  }
+  try {
+    const domain = new URL(article.url).hostname.replace(/^www\./, "");
+    parts.push(`📌 출처: ${domain}`);
+  } catch {
+    parts.push(`📌 출처: ${article.url}`);
+  }
+  return parts.join("\n\n");
+}
+
 export default function CardNewsModal({ article, open, onClose }: Props) {
   const [cardnews, setCardnews] = useState<CardNews | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,6 +48,7 @@ export default function CardNewsModal({ article, open, onClose }: Props) {
   const [hasKey, setHasKey] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [bgDataUrl, setBgDataUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -163,7 +182,7 @@ export default function CardNewsModal({ article, open, onClose }: Props) {
             <div className="w-12" />
           </header>
 
-          <div className="flex flex-1 items-center justify-center px-4">
+          <div className="flex flex-1 items-start justify-center overflow-y-auto px-4 py-4">
             {/* 슬라이드 영역 */}
             {!cardnews && !loading && (
               <div className="flex max-w-sm flex-col items-center gap-4 text-center text-white">
@@ -257,6 +276,28 @@ export default function CardNewsModal({ article, open, onClose }: Props) {
                     ⚠️ {error}
                   </p>
                 )}
+
+                {/* 캡션 */}
+                <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-white/40">
+                      Instagram 캡션
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(buildCaption(article));
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="rounded-lg bg-white/10 px-3 py-1 text-[11px] text-white/70 transition hover:bg-white/20 hover:text-white"
+                    >
+                      {copied ? "✓ 복사됨" : "복사"}
+                    </button>
+                  </div>
+                  <p className="whitespace-pre-line text-xs leading-relaxed text-white/60 line-clamp-5">
+                    {buildCaption(article)}
+                  </p>
+                </div>
               </div>
             )}
           </div>

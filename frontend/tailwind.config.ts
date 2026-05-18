@@ -5,7 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ["'Noto Serif KR'", "Georgia", "serif"],
+        display: ["var(--font-display)", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
         sans: ["'Pretendard'", "system-ui", "sans-serif"],
       },
       colors: {
