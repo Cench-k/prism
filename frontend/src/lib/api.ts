@@ -67,7 +67,7 @@ export async function summarizeArticle(
     "X-AI-Key": cfg.apiKey,
   };
   if (cfg.model) headers["X-AI-Model"] = cfg.model;
-  const res = await fetch(`${BASE}/api/articles/${articleId}/summarize`, {
+  const res = await fetch(`/api/articles/${articleId}/summarize`, {
     method: "POST",
     headers,
   });
@@ -89,7 +89,7 @@ export async function generateCardNews(
   };
   if (cfg.model) headers["X-AI-Model"] = cfg.model;
   const qs = cfg.regenerate ? "?regenerate=true" : "";
-  const res = await fetch(`${BASE}/api/articles/${articleId}/cardnews${qs}`, {
+  const res = await fetch(`/api/articles/${articleId}/cardnews${qs}`, {
     method: "POST",
     headers,
   });

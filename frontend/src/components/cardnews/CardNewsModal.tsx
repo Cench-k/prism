@@ -29,6 +29,7 @@ export default function CardNewsModal({ article, open, onClose }: Props) {
   const [index, setIndex] = useState(0);
   const [hasKey, setHasKey] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [bgDataUrl, setBgDataUrl] = useState<string | null>(null);
 
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -42,6 +43,22 @@ export default function CardNewsModal({ article, open, onClose }: Props) {
     setError(null);
     setCardnews(article?.cardnews ?? null);
   }, [article, open]);
+
+  useEffect(() => {
+    if (!article?.image_url) { setBgDataUrl(null); return; }
+    fetch(`/api/proxy-image?url=${encodeURIComponent(article.image_url)}`)
+      .then((r) => r.blob())
+      .then(
+        (blob) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          })
+      )
+      .then(setBgDataUrl)
+      .catch(() => setBgDataUrl(null));
+  }, [article?.image_url]);
 
   const generate = useCallback(
     async (regenerate = false) => {
@@ -197,7 +214,7 @@ export default function CardNewsModal({ article, open, onClose }: Props) {
                           slide={s}
                           index={i}
                           total={cardnews.slides.length}
-                          backgroundUrl={article.image_url}
+                          backgroundUrl={bgDataUrl ?? article.image_url}
                           category={article.category}
                         />
                       </div>
