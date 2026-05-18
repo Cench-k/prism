@@ -50,6 +50,34 @@
       "lang": "en"
     },
     {
+      "id": "techcrunch_ai",
+      "type": "rss",
+      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "category": "ai",
+      "lang": "en"
+    },
+    {
+      "id": "venturebeat_ai",
+      "type": "rss",
+      "url": "https://venturebeat.com/category/ai/feed/",
+      "category": "ai",
+      "lang": "en"
+    },
+    {
+      "id": "mit_techreview",
+      "type": "rss",
+      "url": "https://www.technologyreview.com/feed/",
+      "category": "ai",
+      "lang": "en"
+    },
+    {
+      "id": "theverge_ai",
+      "type": "rss",
+      "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+      "category": "ai",
+      "lang": "en"
+    },
+    {
       "id": "bbc_world",
       "type": "rss",
       "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -99,6 +127,118 @@
       "lang": "ko"
     },
     {
+      "id": "reddit_damnthatsinteresting",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/Damnthatsinteresting/.rss",
+      "category": "viral",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_nextfuckinglevel",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/nextfuckinglevel/.rss",
+      "category": "viral",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_todayilearned",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/todayilearned/.rss",
+      "category": "viral",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_nottheonion",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/nottheonion/.rss",
+      "category": "viral",
+      "lang": "en"
+    },
+    {
+      "id": "spacedotcom",
+      "type": "rss",
+      "url": "https://www.space.com/feeds/all",
+      "category": "science",
+      "lang": "en"
+    },
+    {
+      "id": "sciencedaily",
+      "type": "rss",
+      "url": "https://www.sciencedaily.com/rss/all.xml",
+      "category": "science",
+      "lang": "en"
+    },
+    {
+      "id": "phys_org",
+      "type": "rss",
+      "url": "https://phys.org/rss-feed/",
+      "category": "science",
+      "lang": "en"
+    },
+    {
+      "id": "nasa",
+      "type": "rss",
+      "url": "https://www.nasa.gov/rss/dyn/breaking_news.rss",
+      "category": "science",
+      "lang": "en"
+    },
+    {
+      "id": "medicalnewstoday",
+      "type": "rss",
+      "url": "https://www.medicalnewstoday.com/rss/",
+      "category": "health",
+      "lang": "en"
+    },
+    {
+      "id": "harvard_health",
+      "type": "rss",
+      "url": "https://www.health.harvard.edu/blog/feed",
+      "category": "health",
+      "lang": "en"
+    },
+    {
+      "id": "healthline",
+      "type": "rss",
+      "url": "https://www.healthline.com/rss/health-news",
+      "category": "health",
+      "lang": "en"
+    },
+    {
+      "id": "bbc_sport",
+      "type": "rss",
+      "url": "http://feeds.bbci.co.uk/sport/rss.xml",
+      "category": "sports",
+      "lang": "en"
+    },
+    {
+      "id": "espn",
+      "type": "rss",
+      "url": "https://www.espn.com/espn/rss/news",
+      "category": "sports",
+      "lang": "en"
+    },
+    {
+      "id": "variety",
+      "type": "rss",
+      "url": "https://variety.com/feed/",
+      "category": "entertainment",
+      "lang": "en"
+    },
+    {
+      "id": "rollingstone",
+      "type": "rss",
+      "url": "https://www.rollingstone.com/feed/",
+      "category": "entertainment",
+      "lang": "en"
+    },
+    {
+      "id": "pitchfork",
+      "type": "rss",
+      "url": "https://pitchfork.com/rss/news/",
+      "category": "entertainment",
+      "lang": "en"
+    },
+    {
       "id": "lifehacker",
       "type": "rss",
       "url": "https://lifehacker.com/rss",
@@ -116,6 +256,13 @@
       "id": "reddit_mildlyinteresting",
       "type": "rss",
       "url": "https://www.reddit.com/r/mildlyinteresting/.rss",
+      "category": "fun",
+      "lang": "en"
+    },
+    {
+      "id": "boredpanda",
+      "type": "rss",
+      "url": "https://www.boredpanda.com/feed/",
       "category": "fun",
       "lang": "en"
     }
