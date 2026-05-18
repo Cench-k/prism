@@ -36,9 +36,16 @@
       "lang": "en"
     },
     {
-      "id": "hackernews",
+      "id": "wired",
       "type": "rss",
-      "url": "https://news.ycombinator.com/rss",
+      "url": "https://www.wired.com/feed/rss",
+      "category": "tech",
+      "lang": "en"
+    },
+    {
+      "id": "arstechnica",
+      "type": "rss",
+      "url": "https://feeds.arstechnica.com/arstechnica/index",
       "category": "tech",
       "lang": "en"
     },
@@ -57,6 +64,48 @@
       "lang": "en"
     },
     {
+      "id": "reuters",
+      "type": "rss",
+      "url": "https://feeds.reuters.com/reuters/worldNews",
+      "category": "world",
+      "lang": "en"
+    },
+    {
+      "id": "yonhap",
+      "type": "rss",
+      "url": "https://www.yna.co.kr/rss/news.xml",
+      "category": "korea",
+      "lang": "ko"
+    },
+    {
+      "id": "chosun",
+      "type": "rss",
+      "url": "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml",
+      "category": "korea",
+      "lang": "ko"
+    },
+    {
+      "id": "mbc_news",
+      "type": "rss",
+      "url": "https://imnews.imbc.com/rss/news/news_00.xml",
+      "category": "korea",
+      "lang": "ko"
+    },
+    {
+      "id": "hani",
+      "type": "rss",
+      "url": "https://www.hani.co.kr/rss/",
+      "category": "korea",
+      "lang": "ko"
+    },
+    {
+      "id": "lifehacker",
+      "type": "rss",
+      "url": "https://lifehacker.com/rss",
+      "category": "fun",
+      "lang": "en"
+    },
+    {
       "id": "reddit_aww",
       "type": "rss",
       "url": "https://www.reddit.com/r/aww/.rss",
@@ -64,9 +113,9 @@
       "lang": "en"
     },
     {
-      "id": "reddit_eyebleach",
+      "id": "reddit_mildlyinteresting",
       "type": "rss",
-      "url": "https://www.reddit.com/r/Eyebleach/.rss",
+      "url": "https://www.reddit.com/r/mildlyinteresting/.rss",
       "category": "fun",
       "lang": "en"
     }

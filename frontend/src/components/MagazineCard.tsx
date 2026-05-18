@@ -7,8 +7,12 @@ const CATEGORY_LABEL: Record<string, string> = {
   crypto: "돈과 시장 · 암호화폐",
   realestate: "돈과 시장 · 부동산",
   tech: "기술과 미래",
+  world: "세상 이야기",
+  korea: "한국 뉴스",
   society: "세상 이야기",
   fun: "도파민과 힐링",
+  finance: "금융",
+  life: "라이프",
 };
 
 type Props = {
