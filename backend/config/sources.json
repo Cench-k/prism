@@ -286,6 +286,76 @@
       "url": "https://trends.google.com/trending/rss?geo=JP",
       "category": "trending",
       "lang": "ja"
+    },
+    {
+      "id": "businessinsider",
+      "type": "rss",
+      "url": "https://www.businessinsider.com/rss",
+      "category": "finance",
+      "lang": "en"
+    },
+    {
+      "id": "businessinsider_markets",
+      "type": "rss",
+      "url": "https://markets.businessinsider.com/rss/news",
+      "category": "finance",
+      "lang": "en"
+    },
+    {
+      "id": "cnbc",
+      "type": "rss",
+      "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+      "category": "finance",
+      "lang": "en"
+    },
+    {
+      "id": "yahoo_finance",
+      "type": "rss",
+      "url": "https://finance.yahoo.com/news/rssindex",
+      "category": "finance",
+      "lang": "en"
+    },
+    {
+      "id": "mysterious_universe",
+      "type": "rss",
+      "url": "https://mysteriousuniverse.org/feed/",
+      "category": "mystery",
+      "lang": "en"
+    },
+    {
+      "id": "the_debrief",
+      "type": "rss",
+      "url": "https://thedebrief.org/feed",
+      "category": "mystery",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_ufos",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/UFOs/.rss",
+      "category": "mystery",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_highstrangeness",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/HighStrangeness/.rss",
+      "category": "mystery",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_paranormal",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/Paranormal/.rss",
+      "category": "mystery",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_aliens",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/aliens/.rss",
+      "category": "mystery",
+      "lang": "en"
     }
   ]
 }
