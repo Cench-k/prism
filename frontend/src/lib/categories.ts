@@ -1,4 +1,5 @@
 export const CATEGORY_LABELS: Record<string, string> = {
+  trending: "트렌드",
   crypto: "암호화폐",
   tech: "테크",
   ai: "AI",

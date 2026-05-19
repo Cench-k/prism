@@ -4,6 +4,7 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import type { Article } from "@/types/article";
 
 const CATEGORY_LABEL: Record<string, string> = {
+  trending: "🔥 지금 트렌드",
   crypto: "돈과 시장 · 암호화폐",
   realestate: "돈과 시장 · 부동산",
   finance: "금융",

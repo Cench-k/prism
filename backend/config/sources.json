@@ -265,6 +265,27 @@
       "url": "https://www.boredpanda.com/feed/",
       "category": "fun",
       "lang": "en"
+    },
+    {
+      "id": "google_trends_kr",
+      "type": "rss",
+      "url": "https://trends.google.co.kr/trending/rss?geo=KR",
+      "category": "trending",
+      "lang": "ko"
+    },
+    {
+      "id": "google_trends_us",
+      "type": "rss",
+      "url": "https://trends.google.com/trending/rss?geo=US",
+      "category": "trending",
+      "lang": "en"
+    },
+    {
+      "id": "google_trends_jp",
+      "type": "rss",
+      "url": "https://trends.google.com/trending/rss?geo=JP",
+      "category": "trending",
+      "lang": "ja"
     }
   ]
 }

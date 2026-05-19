@@ -14,28 +14,50 @@ def _serialize(doc: dict) -> dict:
     return doc
 
 
+DEFAULT_LOOKBACK_DAYS = 2
+
+
+def _lookback_filter(days: int) -> dict:
+    """발행일(published_at) 기준 N일 이내. published_at이 없으면 collected_at 대체."""
+    from datetime import datetime, timezone, timedelta
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    return {
+        "$or": [
+            {"published_at": {"$gte": cutoff}},
+            {
+                "published_at": {"$in": [None]},
+                "collected_at": {"$gte": cutoff},
+            },
+        ]
+    }
+
+
 @router.get("/articles")
 async def list_articles(
     category: Optional[str] = Query(default=None),
     limit: int = Query(default=20, ge=1, le=100),
     cursor: Optional[str] = Query(default=None, description="last collected_at ISO"),
+    days: int = Query(default=DEFAULT_LOOKBACK_DAYS, ge=1, le=30),
 ):
+    from datetime import datetime
+
     db = get_db()
-    query: dict = {}
+    base: dict = _lookback_filter(days)
     if category:
-        query["category"] = category
+        base["category"] = category
+
     if cursor:
-        from datetime import datetime
         try:
             ts = datetime.fromisoformat(cursor)
         except ValueError:
             raise HTTPException(status_code=400, detail="invalid cursor")
-        query["collected_at"] = {"$lt": ts}
+        query: dict = {"$and": [base, {"collected_at": {"$lt": ts}}]}
+    else:
+        query = base
 
     cursor_docs = (
-        db.articles.find(query)
-        .sort("collected_at", -1)
-        .limit(limit)
+        db.articles.find(query).sort("collected_at", -1).limit(limit)
     )
     docs = [_serialize(d) async for d in cursor_docs]
     next_cursor = None
@@ -59,10 +81,13 @@ async def get_article(article_id: str):
 
 
 @router.get("/categories")
-async def list_categories():
-    """현재 DB에 기사가 있는 카테고리 목록 + 카운트."""
+async def list_categories(
+    days: int = Query(default=DEFAULT_LOOKBACK_DAYS, ge=1, le=30),
+):
+    """최근 N일 이내 기사가 있는 카테고리 목록 + 카운트."""
     db = get_db()
     pipeline = [
+        {"$match": _lookback_filter(days)},
         {"$group": {"_id": "$category", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
     ]
