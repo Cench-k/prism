@@ -356,6 +356,41 @@
       "url": "https://www.reddit.com/r/aliens/.rss",
       "category": "mystery",
       "lang": "en"
+    },
+    {
+      "id": "tocana",
+      "type": "rss",
+      "url": "https://tocana.jp/feed",
+      "category": "jp_mystery",
+      "lang": "ja"
+    },
+    {
+      "id": "karapaia",
+      "type": "rss",
+      "url": "https://karapaia.com/archives/category/mystery/feed",
+      "category": "jp_mystery",
+      "lang": "ja"
+    },
+    {
+      "id": "reddit_japanesefolklore",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/JapaneseFolklore/.rss",
+      "category": "jp_mystery",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_japanesehorrorstories",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/JapaneseHorrorStories/.rss",
+      "category": "jp_mystery",
+      "lang": "en"
+    },
+    {
+      "id": "reddit_unresolvedmysteries",
+      "type": "rss",
+      "url": "https://www.reddit.com/r/UnresolvedMysteries/.rss",
+      "category": "jp_mystery",
+      "lang": "en"
     }
   ]
 }

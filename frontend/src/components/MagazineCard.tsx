@@ -5,6 +5,7 @@ import type { Article } from "@/types/article";
 
 const CATEGORY_LABEL: Record<string, string> = {
   trending: "🔥 지금 트렌드",
+  jp_mystery: "🕵️ 일본 미스테리 · 미제",
   mystery: "🛸 UFO · 미스테리",
   crypto: "돈과 시장 · 암호화폐",
   realestate: "돈과 시장 · 부동산",

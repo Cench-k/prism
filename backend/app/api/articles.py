@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, Query, HTTPException, Header
 
-from app.db.mongo import get_db
+from app.db.mongo import get_db, PERMANENT_CATEGORIES
 from app.services.market import fetch_crypto_tickers
 from app.services.summarizer import summarize, ProviderError
 from app.services.cardnews import generate_cardnews
@@ -18,12 +18,14 @@ DEFAULT_LOOKBACK_DAYS = 2
 
 
 def _lookback_filter(days: int) -> dict:
-    """발행일(published_at) 기준 N일 이내. published_at이 없으면 collected_at 대체."""
+    """발행일(published_at) 기준 N일 이내. published_at이 없으면 collected_at 대체.
+    PERMANENT_CATEGORIES에 속한 기사는 시간 무관(영구 표시)."""
     from datetime import datetime, timezone, timedelta
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     return {
         "$or": [
+            {"category": {"$in": list(PERMANENT_CATEGORIES)}},
             {"published_at": {"$gte": cutoff}},
             {
                 "published_at": {"$in": [None]},

@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import timedelta
 from pathlib import Path
 
 from pymongo.errors import DuplicateKeyError
 
 from app.collectors.factory import build_collector
-from app.db.mongo import get_db, ensure_indexes
+from app.db.mongo import (
+    PERMANENT_CATEGORIES,
+    TTL_HOURS,
+    get_db,
+    ensure_indexes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +31,16 @@ def load_sources(category: str | None = None) -> list[dict]:
     return sources
 
 
+def _apply_archive_until(item: dict) -> None:
+    """일반 카테고리는 archive_until = collected_at + 48h, 영구 카테고리는 미설정."""
+    if item.get("category") in PERMANENT_CATEGORIES:
+        item.pop("archive_until", None)
+        return
+    collected_at = item.get("collected_at")
+    if collected_at is not None:
+        item["archive_until"] = collected_at + timedelta(hours=TTL_HOURS)
+
+
 async def process_source(source: dict) -> tuple[int, int]:
     collector = build_collector(source)
     items = await collector.fetch()
@@ -36,6 +52,7 @@ async def process_source(source: dict) -> tuple[int, int]:
         if existing:
             skipped += 1
             continue
+        _apply_archive_until(item)
         try:
             await db.articles.insert_one(item)
             inserted += 1
